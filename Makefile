@@ -13,7 +13,7 @@ CSC = dotnet /usr/local/share/dotnet/sdk/10.0.100/Roslyn/bincore/csc.dll
 DOSNETC = $(BUILD_DIR)/DosNet.Compiler
 
 # Lista de samples
-SAMPLES = HelloWorld SimpleInt Fibonacci Loop SimpleAdd SimpleClass ArrayTest SwitchTest ExceptionTest NullableTest InheritanceTest InterfaceTest GenericList
+SAMPLES = HelloWorld SimpleInt SimpleZero TestAlloc TestGC TestNoAlloc TestObj TestSimpleAlloc Fibonacci Loop SimpleAdd SimpleClass ArrayTest SwitchTest ExceptionTest NullableTest InheritanceTest InterfaceTest GenericList
 
 .PHONY: all clean corlib core compiler samples samples-dll samples-asm
 

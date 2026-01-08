@@ -799,21 +799,23 @@ public class MethodCompiler
         // Inicializar VTable
         _emitter.Mov($"DWORD PTR [EAX]", $"OFFSET {type.VTableLabel}");
         
-        // Salvar ponteiro do objeto
+        // Salvar ponteiro do objeto para retorno
         _emitter.Push("EAX");
         
-        // Chamar construtor (this já está na pilha)
-        // Os argumentos do construtor já devem estar na pilha antes do newobj
+        // Chamar construtor (this na pilha)
+        // NOTA: Precisamos passar this novamente porque o PUSH acima é para o retorno
+        _emitter.Push("EAX");
         _emitter.Call(ctor.GetLabel());
         
-        // Limpar argumentos do construtor (exceto this que fica)
+        // Limpar argumentos do construtor (this + outros parâmetros)
+        // GetParametersSize() inclui this, então limpamos tudo
         int argsSize = ctor.GetParametersSize();
         if (argsSize > 0)
         {
             _emitter.Add("ESP", argsSize.ToString());
         }
         
-        // O ponteiro do objeto permanece no topo da pilha
+        // O ponteiro do objeto permanece no topo da pilha (do primeiro PUSH)
     }
     
     private void EmitNewObj(TypeDef type)
@@ -898,14 +900,16 @@ public class MethodCompiler
         // Stack: [length] -> [array ref]
         _emitter.Pop("ECX"); // length
         
-        // Calcular tamanho: header(8) + length(4) + elements(length * elementSize)
+        // Calcular tamanho dos DADOS (sem header GC, que é adicionado por __gc_alloc):
+        // VTable(4) + Length(4) + elements(length * elementSize)
+        // NOTA: __gc_alloc já adiciona 8 bytes de header internamente
         int elementSize = elementType?.GetStackSize() ?? 4;
         _emitter.Mov("EAX", "ECX");
         if (elementSize != 1)
         {
             _emitter.EmitInstruction("IMUL", $"EAX, {elementSize}");
         }
-        _emitter.Add("EAX", "12"); // header + length field
+        _emitter.Add("EAX", "8"); // VTable(4) + Length(4), SEM header GC
         
         // Alocar
         _emitter.Push("ECX"); // salvar length

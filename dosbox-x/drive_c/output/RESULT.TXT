@@ -1,1 +1,1 @@
-Test 1: String literal
+Hello, DOS World!

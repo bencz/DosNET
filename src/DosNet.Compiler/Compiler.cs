@@ -219,11 +219,8 @@ public class Compiler
             // Runtime code (GC, SoftFloat, etc)
             GenerateRuntimeCode(output);
             
-            // User code
+            // User code (inclui __program_end e END __start no final)
             GenerateUserCode(output);
-            
-            // End
-            output.AppendLine("END __start");
         }
         
         return output.ToString();
@@ -299,6 +296,8 @@ public class Compiler
         // Código dos métodos
         output.AppendLine(generatedCode);
         
+        // NOTA: __program_end NÃO é definido aqui no CORLIB
+        // Ele será definido na aplicação para ficar no final do executável linkado
         output.AppendLine();
         output.AppendLine("END");
     }
@@ -340,10 +339,7 @@ public class Compiler
         output.AppendLine(ioGen.GenerateCodeOnly());
         output.AppendLine();
         
-        // Placeholder para __program_end
-        output.AppendLine("PUBLIC __program_end");
-        output.AppendLine("__program_end:");
-        output.AppendLine();
+        // NOTA: __program_end é gerado no final do CORLIB, após todo o código
     }
     
     private void GenerateCorlibRuntimeData(StringBuilder output)
@@ -415,6 +411,15 @@ public class Compiler
         // I/O functions are defined in CORLIB via IORuntimeGenerator
         // No need for EXTRN declarations here
         
+        // VTables from corlib (needed for array allocation, boxing, etc.)
+        output.AppendLine("; VTables from corlib");
+        output.AppendLine("EXTRN __vtbl_System_Object:DWORD");
+        output.AppendLine("EXTRN __vtbl_System_String:DWORD");
+        output.AppendLine("EXTRN __vtbl_System_Array:DWORD");
+        output.AppendLine("EXTRN __vtbl_System_Int32:DWORD");
+        output.AppendLine("EXTRN __vtbl_System_Boolean:DWORD");
+        output.AppendLine("EXTRN __vtbl_System_Char:DWORD");
+        
         output.AppendLine();
     }
     
@@ -482,18 +487,42 @@ public class Compiler
         }
         
         output.AppendLine(generatedCode);
+        
+        // __program_end deve estar no FINAL da aplicação
+        // O heap do GC começa após este ponto
+        // Como a aplicação é linkada DEPOIS do CORLIB, este será o final real do executável
+        output.AppendLine();
+        output.AppendLine("; ============================================================");
+        output.AppendLine("; END OF PROGRAM - Heap starts after this");
+        output.AppendLine("; ============================================================");
+        output.AppendLine("PUBLIC __program_end");
+        output.AppendLine("__program_end:");
+        output.AppendLine();
+        output.AppendLine("END __start");
     }
     
     private bool IsCorlibType(DosNet.Core.Types.TypeDef type)
     {
         if (type == null) return false;
         var ns = type.Namespace ?? "";
+        var name = type.Name ?? "";
+        var fullName = type.FullName ?? "";
+        
         // Tipos do System.* são do corlib
-        // Tipos do Microsoft.CodeAnalysis.* são gerados pelo compilador (ignorar)
-        // Tipos com namespace vazio e nome começando com "<" são gerados pelo compilador
         if (ns.StartsWith("System")) return true;
+        
+        // Tipos do Microsoft.CodeAnalysis.* são gerados pelo compilador (ignorar)
         if (ns.StartsWith("Microsoft.CodeAnalysis")) return true;
-        if (ns == "" && type.Name.StartsWith("<")) return true;
+        
+        // Tipos com namespace vazio e nome começando com "<" são gerados pelo compilador
+        if (ns == "" && name.StartsWith("<")) return true;
+        
+        // Tipos aninhados do corlib (nome contém + indica tipo aninhado)
+        if (fullName.Contains("+") && fullName.StartsWith("System.")) return true;
+        
+        // TypeFlags é um tipo interno do corlib
+        if (name == "TypeFlags") return true;
+        
         return false;
     }
     

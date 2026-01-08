@@ -54,7 +54,7 @@ public class RuntimeOptions
     /// <summary>
     /// Tamanho do heap em bytes
     /// </summary>
-    public int HeapSize { get; set; } = 4 * 1024 * 1024; // 4MB
+    public int HeapSize { get; set; } = 64 * 1024; // 64KB (reduzido para teste)
     
     /// <summary>
     /// Tamanho da stack em bytes

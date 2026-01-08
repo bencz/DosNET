@@ -495,6 +495,8 @@ __gc_notify_alloc ENDP
     /// </summary>
     public string GenerateAppStartup()
     {
+        var heapSize = _options.HeapSize;
+        
         return $@"; ============================================================
 ; STARTUP CODE - DosNET Application
 ; Exception handlers are in corlib.lib
@@ -509,14 +511,26 @@ __gc_notify_alloc ENDP
 ; Entry Point
 ; ============================================================
 EXTRN __exit:PROC
+EXTRN __gc_init:PROC
 
 PUBLIC __start
 __start PROC
+    ; Inicializar GC
+    MOV EAX, {heapSize}
+    CALL __gc_init
+    TEST EAX, EAX
+    JZ __gc_init_failed_app
+    
     ; Chamar Program.Main (definido no código do usuário)
     CALL __Program_Main
     
     ; Sair com código de retorno
     PUSH EAX
+    CALL __exit
+
+__gc_init_failed_app:
+    ; GC init failed - exit with error
+    PUSH 1
     CALL __exit
 __start ENDP
 ";

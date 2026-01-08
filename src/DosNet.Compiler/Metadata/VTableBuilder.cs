@@ -128,6 +128,7 @@ public class VTableBuilder
             {
                 // Tipo sem métodos virtuais - VTable vazia
                 sb.AppendLine($"; VTable for {type.FullName} (empty)");
+                sb.AppendLine($"PUBLIC {type.VTableLabel}");
                 sb.AppendLine($"{type.VTableLabel}:");
                 sb.AppendLine($"    DD 0                    ; No virtual methods");
                 sb.AppendLine();
@@ -135,6 +136,7 @@ public class VTableBuilder
             }
             
             sb.AppendLine($"; VTable for {type.FullName}");
+            sb.AppendLine($"PUBLIC {type.VTableLabel}");
             sb.AppendLine($"{type.VTableLabel}:");
             
             foreach (var method in type.VirtualMethods)

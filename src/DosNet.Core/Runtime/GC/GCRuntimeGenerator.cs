@@ -29,6 +29,9 @@ public class GCRuntimeGenerator
 
 .CODE
 
+; __program_end é definido na aplicação (não no CORLIB)
+EXTRN __program_end:NEAR
+
 ; ============================================================
 ; __gc_init
 ; Inicializa o Garbage Collector
@@ -142,19 +145,16 @@ __gc_alloc ENDP
 ; Output: EAX = ponteiro para dados
 ; ============================================================
 __gc_alloc_typed PROC
-    PUSH EBX
-    PUSH ECX
-    MOV ECX, EBX                ; Salvar type index
+    PUSH EBX                    ; Salvar type index na stack
     CALL __gc_alloc
+    POP EBX                     ; Restaurar type index
     TEST EAX, EAX
     JZ __gc_alloc_typed_done
     
     ; Setar type index no header
-    MOV [EAX-4], CX             ; TypeIndex em offset -4 do data
+    MOV [EAX-4], BX             ; TypeIndex em offset -4 do data
     
 __gc_alloc_typed_done:
-    POP ECX
-    POP EBX
     RET
 __gc_alloc_typed ENDP
 
