@@ -1,0 +1,673 @@
+JWasm v2.14pre, Dec 14 2020
+vesa2.asm
+                                ;---------------------------------------;
+                                ;    DDRAW Plasma Demo                  ;
+                                ;                                       ;
+                                ;    Author :         X-Calibre         ;
+                                ;    ASM version :    Ewald Snel        ;
+                                ;    Copyright (C) 1999, Diamond Crew   ;
+                                ;                                       ;
+                                ;    http://here.is/diamond/            ;
+                                ;                                       ;
+                                ;    translated to DOS by japheth       ;
+                                ;    http://www.japheth.de              ;
+                                ;---------------------------------------;
+
+ = 1                            ?BACKBUFFER equ 1   ;1=use a backbuffer
+
+                                ; View with TAB size 4
+
+                                    .486
+                                if 0    
+                                else
+                                    .MODEL SMALL, STDCALL
+                                DGROUP group _TEXT
+                                endif
+                                    option casemap :none
+
+                                    .list
+                                    .cref
+
+                                    nextFrame   PROTO
+                                    initPlasma  PROTO
+
+                                RETURN  MACRO   arg
+ >                                  IFNB <arg>
+ >                                      mov     eax, arg
+ >                                  ENDIF
+ >                                  ret
+ >                              ENDM
+
+                                LRETURN MACRO   arg 
+ >                                  IFNB <arg>
+ >                                      mov     eax, arg
+ >                                  ENDIF
+ >                                  leave
+ >                                  ret
+ >                              ENDM
+
+                                FATAL   MACRO   msg
+ >                                  LOCAL @@msg
+ >                                  .DATA
+ >                                  @@msg   db  msg, 13,10,'$'
+ >                                  .CODE
+ >                                  mov ah,9
+ >                                  mov edx, offset @@msg
+ >                                  int 21h
+ >                                  mov ax,4c00h
+ >                                  int 21h
+ >                              ENDM
+
+
+                                    .DATA?
+
+00000000  000000000000000000    palette         dd      256 dup (?)
+00000400  000000000000000000    table           dd      512 dup (?)
+
+00000000                            .DATA
+
+ = 280                          ddwidth         EQU     640     ; display mode width
+ = 1E0                          ddheight        EQU     480     ; display mode height
+00000000  04000000              dwBytesPixel	dd      4
+
+00000004  FFFFFFFF              dwMode          dd      -1
+                                if ?BACKBUFFER
+00000008  00000000              dwScreenSize    dd      0
+0000000C  00000000              dwScreenOffs    dd      0
+00000010  01                    bFlip           db      1
+                                endif
+00000011  00000000              phaseA          dd      0
+00000015  00000000              phaseB          dd      0
+
+ = FFFFFFFF                     factor1         EQU     -1
+ = 1                            factor2         EQU     1
+ = 1                            factor3         EQU     1
+ = FFFFFFFF                     factor4         EQU     -1
+
+00000019  00009643              red             REAL4   300.0
+0000001D  0000A043              green           REAL4   320.0
+00000021  0000AA43              blue            REAL4   340.0
+
+00000025  00000040              scale1          REAL4   2.0
+00000029  0000FF42              scale2          REAL4   127.5
+0000002D  00008043              scale3          REAL4   256.0
+
+00000031  000000000000000000    svgainfo    SVGAINFO <>
+
+00000000                            .CODE
+
+                                ;-----------------------------------------------------------;
+                                ;                Calculate Next Plasma Frame                ;
+                                ;-----------------------------------------------------------;
+
+00000000                        nextFrame   PROC uses ebx esi edi ebp
+
+00000004  B9E0010000                mov     ecx, ddheight           ; # of scanlines
+00000009  8B3D59000000              mov     edi, svgainfo.PhysBasePtr
+                                if ?BACKBUFFER
+0000000F  033D0C000000              add     edi, dwScreenOffs
+                                endif
+00000015  8B2D00000000              mov     ebp, dwBytesPixel 
+0000001B                        @@scanline:
+0000001B  51                        push    ecx
+0000001C  57                        push    edi
+
+0000001D  8B3511000000              mov     esi, [phaseA]
+00000023  8B1515000000              mov     edx, [phaseB]
+00000029  2BF1                      sub     esi, ecx
+0000002B  81E2FF000000              and     edx, 0FFh
+00000031  81E6FF000000              and     esi, 0FFh
+00000037  8B149500080000            mov     edx, [table][4*edx][256*4]
+0000003E  8B34B500040000            mov     esi, [table][4*esi]     ; [x]  +  table0[a + y]
+00000045  2BD1                      sub     edx, ecx                ; [y]  +  table1[b]
+00000047  B980020000                mov     ecx, ddwidth            ; [x] --> pixel counter
+
+0000004C                        @@pixel:
+0000004C  81E6FF000000              and     esi, 0FFh
+00000052  81E2FF000000              and     edx, 0FFh
+00000058  8B04B500040000            mov     eax, [table][4*esi]
+0000005F  8B1C9500080000            mov     ebx, [table][4*edx][256*4]
+00000066  03C3                      add     eax, ebx
+00000068  83C601                    add     esi, factor3
+0000006B  D1E8                      shr     eax, 1
+0000006D  83C2FF                    add     edx, factor4
+00000070  25FF000000                and     eax, 0FFh
+00000075  03FD                      add     edi, ebp
+00000077  8B048500000000            mov     eax, [palette][4*eax]
+0000007E  83FD04                    cmp     ebp, 4
+00000081  7509                      jnz     @F
+00000083  658947FC                  mov     gs:[edi-4], eax
+00000087  49                        dec     ecx
+00000088  75C2                      jnz     @@pixel
+0000008A  EB0F                      jmp     done
+0000008C                        @@:    
+0000008C  66658947FD                mov     gs:[edi-3], ax
+00000091  C1E808                    shr     eax,8
+00000094  658867FF                  mov     gs:[edi-1], ah
+00000098  49                        dec     ecx
+00000099  75B1                      jnz     @@pixel
+0000009B                        done:
+0000009B  5F                        pop     edi
+0000009C  59                        pop     ecx
+0000009D  0FB70541000000            movzx   eax, svgainfo.BytesPerScanLine
+000000A4  03F8                      add     edi, eax                        ; inc. display position
+000000A6  49                        dec     ecx
+000000A7  0F856EFFFFFF              jnz     @@scanline
+
+000000AD  830511000000FF            add     [phaseA], factor1
+000000B4  83051500000001            add     [phaseB], factor2
+
+000000BB                            ret
+000000C0                        nextFrame   ENDP
+
+
+                                ;-----------------------------------------------------------;
+                                ;                Initalize Plasma Tables                    ;
+                                ;-----------------------------------------------------------;
+
+000000C0                        initPlasma  PROC
+
+                                    LOCAL @@i :DWORD
+                                    LOCAL @@r :DWORD
+                                    LOCAL @@g :DWORD
+                                    LOCAL @@b :DWORD
+                                    LOCAL temp :DWORD
+
+000000C6  C745FC00000000            mov     [@@i], 0
+
+000000CD                            .WHILE @@i < 256
+
+000000D2  8B55FC                        mov     edx, [@@i]
+
+                                ; Calculate table0 value
+
+000000D5  D9EB                          fldpi
+000000D7  DA4DFC                        fimul   [@@i]
+000000DA  D80D25000000                  fmul    [scale1]
+000000E0  D8352D000000                  fdiv    [scale3]
+000000E6  D9FE                          fsin
+000000E8  D80D29000000                  fmul    [scale2]
+000000EE  D80529000000                  fadd    [scale2]
+000000F4  DB1C9500040000                fistp   [table][4*edx]
+
+                                ; Calculate table1 value
+
+000000FB  D9EB                          fldpi
+000000FD  DA4DFC                        fimul   [@@i]
+00000100  D80D25000000                  fmul    [scale1]
+00000106  D8352D000000                  fdiv    [scale3]
+0000010C  D9FF                          fcos
+0000010E  D80D29000000                  fmul    [scale2]
+00000114  D80529000000                  fadd    [scale2]
+0000011A  D9EB                          fldpi
+0000011C  DEC9                          fmulp   st(1), st
+0000011E  D80D25000000                  fmul    [scale1]
+00000124  D8352D000000                  fdiv    [scale3]
+0000012A  D9FE                          fsin
+0000012C  D80D29000000                  fmul    [scale2]
+00000132  D80529000000                  fadd    [scale2]
+00000138  DB1C9500080000                fistp   [table][4*edx][4*256]
+
+                                ; Calculate palette value
+
+0000013F  33C0                          xor     eax, eax
+
+                                        FOR comp, <red, green, blue>
+ >                                          fldpi
+ >                                          fimul   [@@i]
+ >                                          fmul    [scale1]
+ >                                          fdiv    [comp]
+ >                                          fcos
+ >                                          fmul    [scale2]
+ >                                          fadd    [scale2]
+ >                                          fistp   [temp]
+ >                                          shl     eax, 8
+ >                                          or      eax, [temp]
+ >                                      ENDM
+00000141  D9EB               1              fldpi
+00000143  DA4DFC             1              fimul   [@@i]
+00000146  D80D25000000       1              fmul    [scale1]
+0000014C  D83519000000       1              fdiv    [red]
+00000152  D9FF               1              fcos
+00000154  D80D29000000       1              fmul    [scale2]
+0000015A  D80529000000       1              fadd    [scale2]
+00000160  DB5DEC             1              fistp   [temp]
+00000163  C1E008             1              shl     eax, 8
+00000166  0B45EC             1              or      eax, [temp]
+00000169  D9EB               1              fldpi
+0000016B  DA4DFC             1              fimul   [@@i]
+0000016E  D80D25000000       1              fmul    [scale1]
+00000174  D8351D000000       1              fdiv    [green]
+0000017A  D9FF               1              fcos
+0000017C  D80D29000000       1              fmul    [scale2]
+00000182  D80529000000       1              fadd    [scale2]
+00000188  DB5DEC             1              fistp   [temp]
+0000018B  C1E008             1              shl     eax, 8
+0000018E  0B45EC             1              or      eax, [temp]
+00000191  D9EB               1              fldpi
+00000193  DA4DFC             1              fimul   [@@i]
+00000196  D80D25000000       1              fmul    [scale1]
+0000019C  D83521000000       1              fdiv    [blue]
+000001A2  D9FF               1              fcos
+000001A4  D80D29000000       1              fmul    [scale2]
+000001AA  D80529000000       1              fadd    [scale2]
+000001B0  DB5DEC             1              fistp   [temp]
+000001B3  C1E008             1              shl     eax, 8
+000001B6  0B45EC             1              or      eax, [temp]
+
+000001B9  89049500000000                mov     [palette][4*edx] , eax
+000001C0  FF45FC                        inc     [@@i]
+
+000001C3                            .ENDW
+
+000001D0                            ret
+000001D4                        initPlasma  ENDP
+
+                                ;--- get a key by examining BIOS vars directly 
+
+000001D4                        getkey  proc uses ebx
+000001D5  33C0                          xor     eax,eax
+000001D7  650FB71D1A040000              movzx   EBX,word ptr gs:[041Ah]
+000001DF  66653B1D1C040000              cmp     BX,gs:[041Ch]
+000001E7  7424                          jz      getkey_1
+000001E9  66658B8300040000              mov     AX,gs:[EBX+400h]
+000001F1  43                            INC     eBX
+000001F2  43                            INC     eBX
+000001F3  66653B1D82040000              CMP     BX,gs:[0482h]
+000001FB  7508                          JNZ     @F
+000001FD  66658B1D80040000              MOV     BX,gs:[0480h]
+00000205                        @@:
+00000205  6665891D1A040000              MOV     gs:[041Ah],BX
+0000020D                        getkey_1:
+0000020D                                ret
+0000020F                        getkey  endp
+
+                                ;--- wait for vertical sync
+
+0000020F                        vsyncwait proc
+0000020F  66BADA03                      mov dx, 3dah
+00000213                        @@:        
+00000213  EC                            in  al, dx
+00000214  A808                          test al,8
+00000216  74FB                          jz  @B
+00000218                                ret
+00000219                        vsyncwait endp
+
+                                ;--- flip screens
+
+                                if ?BACKBUFFER
+00000219                        FlipScreen proc uses ebx
+
+0000021A                                .if (dwScreenOffs)
+00000223  66BAE001                          mov dx,ddheight
+00000227  33C0                              xor eax, eax
+00000229                                .else
+0000022B  66BA0000                          mov dx,0
+0000022F  A108000000                        mov eax, dwScreenSize
+00000234                                .endif
+00000234  A30C000000                    mov dwScreenOffs, eax
+00000239  66B90000                      mov cx,0
+0000023D  B300                          mov bl,00h
+0000023F  B700                          mov bh,00
+00000241  66B8074F                      mov ax,4F07h
+00000245  CD10                          int 10h
+00000247                                ret
+00000249                        FlipScreen endp
+                                endif
+
+                                ;--- alloc some memory
+
+00000249                        allocmemory proc dwSize:dword
+0000024C  668B5D0A                      mov     bx, word ptr dwSize+2
+00000250  668B4D08                      mov     cx, word ptr dwSize+0
+00000254  66B80105                      mov     ax,0501h
+00000258  CD31                          int     31h
+0000025A  7214                          jc      error
+0000025C  6653                          push    bx
+0000025E  6651                          push    cx
+00000260  58                            pop     eax
+                                ife 0
+                                ;externdef __baseadd:dword
+00000261  2B058C010000                  sub     eax,__baseadd   ;adjust linear address (MZ is not zero-based)
+                                endif
+00000267  6656                          push    si
+00000269  6657                          push    di
+0000026B  5A                            pop     edx
+0000026C                                ret
+00000270                        error:
+00000270  33C0                          xor     eax,eax
+00000272                                ret
+00000276                        allocmemory endp
+
+                                ;--- free alloced memory
+
+00000276                        freememory proc dwHandle:dword
+00000279  668B750A                      mov si, word ptr dwHandle+2
+0000027D  668B7D08                      mov di, word ptr dwHandle+0
+00000281  66B80205                      mov ax, 0502h
+00000285  CD31                          int 31h
+00000287  7204                          jc  error
+00000289                                ret
+0000028D                        error:
+0000028D  33C0                          xor eax,eax
+0000028F                                ret
+00000293                        freememory endp
+
+                                ;--- main
+
+00000293                        main    PROC c
+
+                                local   dwEsp:dword
+                                local   dwPrevMode:dword
+                                local   dwSaveBuff:dword
+                                local   dwSaveBuff2:dword
+                                local   dwSaveBuff2hdl:dword
+
+00000299                            invoke  SearchVesaMode, ddwidth, ddheight, 32
+000002AA                            .if (!eax)
+000002AE  FF0D00000000                  dec dwBytesPixel
+000002B4                                invoke  SearchVesaMode, ddwidth, ddheight, 24
+000002C5                               .if (!eax)
+                                           FATAL "no matching VESA Mode found"
+00000000                     1      .DATA
+00000131  6E6F206D6174636869 1      ??0000   db  "no matching VESA Mode found", 13,10,'$'
+00000000                     1      .CODE
+000002C9  B409               1      mov ah,9
+000002CB  BA31010000         1      mov edx, offset ??0000
+000002D0  CD21               1      int 21h
+000002D2  66B8004C           1      mov ax,4c00h
+000002D6  CD21               1      int 21h
+000002D8                               .endif
+000002D8                            .endif
+000002D8  80CC40                    or ah,40h     ;use LFB!!!
+000002DB  A304000000                mov dwMode, eax
+
+000002E0  CC                    	int 3    
+000002E1                            invoke  GetVesaModeInfo, dwMode, addr svgainfo
+000002F1                            .if (!eax)
+                                        FATAL "required VESA Mode not supported"
+00000000                     1      .DATA
+0000014F  726571756972656420 1      ??0001   db  "required VESA Mode not supported", 13,10,'$'
+00000000                     1      .CODE
+000002F5  B409               1      mov ah,9
+000002F7  BA4F010000         1      mov edx, offset ??0001
+000002FC  CD21               1      int 21h
+000002FE  66B8004C           1      mov ax,4c00h
+00000302  CD21               1      int 21h
+00000304                            .endif
+                                if ?BACKBUFFER
+
+00000304                            invoke  GetVesaVideoMemorySize
+00000309  B900B00400                mov ecx, ddwidth * ddheight	;SCREENSIZE = ddwidth * ddheight * bytespixel
+0000030E  8BD1                      mov edx, ecx
+00000310  D1E1                      shl ecx, 1		;*2	
+00000312  03CA                      add ecx, edx	;*3
+00000314                            .if (dwBytesPixel == 4)
+0000031D  03CA                          add ecx, edx
+0000031F                            .endif
+0000031F                            .if (eax < ecx) ;no space for a backbuffer?
+00000323  C6051000000000                mov bFlip, 0
+0000032A                            .endif
+                                endif    
+
+                                ;------------------------------- save the current screen (state + mem)       
+0000032A  8965FC                    mov     dwEsp, esp
+0000032D                            invoke  GetVesaStateBufferSize
+00000332  8BC8                      mov     ecx, eax
+00000334  83C004                    add     eax,4
+00000337  24FC                      and     al,0FCh
+00000339  2BE0                      sub     esp, eax
+0000033B  8965F4                    mov     dwSaveBuff, esp
+0000033E                            invoke  SaveVesaVideoState, dwSaveBuff, ecx
+00000347                            invoke  GetVesaMode
+0000034C  8945F8                    mov     dwPrevMode, eax
+0000034F                            invoke  GetVesaMemoryBufferSize, eax
+00000355                            invoke  allocmemory, eax
+0000035B  8945F0                    mov     dwSaveBuff2, eax
+0000035E  8955EC                    mov     dwSaveBuff2hdl, edx
+00000361                            .if (eax)
+00000365                                invoke  SaveVesaVideoMemory, eax, ecx
+0000036C                            .endif
+
+                                ;------------------------------- now set the new mode
+                                    
+0000036C                            invoke  SetVesaMode, dwMode
+00000377                            .if (!eax)
+                                        FATAL "unable to set VESA Mode"
+00000000                     1      .DATA
+00000172  756E61626C6520746F 1      ??0002   db  "unable to set VESA Mode", 13,10,'$'
+00000000                     1      .CODE
+0000037B  B409               1      mov ah,9
+0000037D  BA72010000         1      mov edx, offset ??0002
+00000382  CD21               1      int 21h
+00000384  66B8004C           1      mov ax,4c00h
+00000388  CD21               1      int 21h
+0000038A                            .endif
+                                if ?BACKBUFFER
+0000038A  0FB70541000000            movzx eax, svgainfo.BytesPerScanLine
+00000391  B9E0010000                mov   ecx, ddheight
+00000396  F7E1                      mul   ecx
+00000398  A308000000                mov   dwScreenSize, eax
+                                endif
+0000039D  E81EFDFFFF                call    initPlasma
+
+                                ;--- main Loop
+
+000003A2                            .WHILE 1
+
+000003A2                                INVOKE  getkey
+000003A7                                .break .if (ax == __ALT_X)
+                                        
+000003AD                                .if (ah == __ESC_MAKE)
+000003B2                                    .while (1)
+000003B2                                        INVOKE  getkey
+000003B7                                        .break .if (ah == __ESC_MAKE)
+000003BC                                    .endw
+000003BE                                .endif
+
+000003BE  E83DFCFFFF                    call nextFrame
+
+000003C3  E847FEFFFF                    call vsyncwait
+                                if ?BACKBUFFER
+000003C8                                .if (bFlip)
+000003D1  E843FEFFFF                        call FlipScreen
+000003D6                                .endif
+                                endif
+
+000003D6                            .ENDW
+
+                                ;------------------------------- restore the screen
+000003D8  8B45F8                    mov eax, dwPrevMode
+000003DB  80CC80                    or ah,80h
+000003DE                            invoke  SetVesaMode, eax
+000003E4                            invoke  RestoreVesaVideoState, dwSaveBuff
+000003EC                            .if (dwSaveBuff2)
+000003F2                                invoke  RestoreVesaVideoMemory, dwSaveBuff2
+000003FA                                invoke  freememory, dwSaveBuff2hdl
+00000402                            .endif
+00000402  8B65FC                    mov esp, dwEsp
+
+00000405                            ret
+00000409                        main    ENDP
+
+                                if 0
+                                else
+
+00000000                            .stack 8192
+                                    .dosseg
+00000000                            .data
+                                    public __baseadd
+0000018C  00000000              __baseadd dd 0
+00000000                            .code
+
+00000409                        start32 proc c
+
+00000409  1E                        push ds
+0000040A  07                        pop es
+
+                                ;--- set __baseadd to base of DS and set its limit to -1
+0000040B  8CDB                      mov ebx,ds
+0000040D  66B80600                  mov ax,6
+00000411  CD31                      int 31h
+00000413  6689158C010000            mov word ptr [__baseadd+0],dx
+0000041A  66890D8E010000            mov word ptr [__baseadd+2],cx
+00000421  66B9FFFF                  mov cx,-1
+00000425  8BD1                      mov edx,ecx
+00000427  66B80800                  mov ax,8
+0000042B  CD31                      int 31h
+
+                                ;--- init GS as flat, zero-based selector
+0000042D  66B80000                  mov ax,0
+00000431  66B90100                  mov cx,1
+00000435  CD31                      int 31h
+00000437  8EE8                      mov gs,eax
+00000439  8BD8                      mov ebx,eax
+0000043B  33C9                      xor ecx,ecx
+0000043D  8BD1                      mov edx,ecx
+0000043F  66B80700                  mov ax,7
+00000443  CD31                      int 31h
+00000445  49                        dec ecx
+00000446  4A                        dec edx
+00000447  66B80800                  mov ax,8
+0000044B  CD31                      int 31h
+
+                                ifdef _VESA32_
+0000044D  E800000000                call VesaInit
+                                endif
+00000452                            invoke  main
+                                ifdef _VESA32_
+00000457  E800000000                call VesaExit
+                                endif
+0000045C  66B8004C                  mov ax,4c00h
+00000460  CD21                      int 21h
+00000462                        start32 endp
+
+ =                              startlabel textequ <>
+
+                                endif
+
+                                    END 
+
+
+Macros:
+
+                N a m e                 Type
+
+@CatStr  . . . . . . . . . . . .        Func
+@Environ . . . . . . . . . . . .        Func
+@InStr . . . . . . . . . . . . .        Func
+@SizeStr . . . . . . . . . . . .        Func
+@SubStr  . . . . . . . . . . . .        Func
+FATAL  . . . . . . . . . . . . .        Proc
+LRETURN  . . . . . . . . . . . .        Proc
+RETURN . . . . . . . . . . . . .        Proc
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+DGROUP . . . . . . . . . . . . .        GROUP
+_DATA  . . . . . . . . . . . . .        32 Bit   00000190 Para    Public  'DATA'
+_TEXT  . . . . . . . . . . . . .        32 Bit   00000462 Para    Public  'CODE'
+_BSS . . . . . . . . . . . . . .        32 Bit   00000C00 Para    Public  'BSS'
+STACK  . . . . . . . . . . . . .        32 Bit   00002000 Para    Stack   'STACK'
+
+
+Procedures, parameters and locals:
+
+                N a m e                 Type     Value    Segment  Length
+
+FlipScreen . . . . . . . . . . .        P Near   00000219 _TEXT    00000030 Public   STDCALL
+  @C0004 . . . . . . . . . . . .        L Near   00000234 _TEXT
+  @C0003 . . . . . . . . . . . .        L Near   0000022B _TEXT
+allocmemory  . . . . . . . . . .        P Near   00000249 _TEXT    0000002D Public   STDCALL
+  dwSize . . . . . . . . . . . .        DWord             ebp + 0008
+  error  . . . . . . . . . . . .        L Near   00000270 _TEXT
+freememory . . . . . . . . . . .        P Near   00000276 _TEXT    0000001D Public   STDCALL
+  dwHandle . . . . . . . . . . .        DWord             ebp + 0008
+  error  . . . . . . . . . . . .        L Near   0000028D _TEXT
+getkey . . . . . . . . . . . . .        P Near   000001D4 _TEXT    0000003B Public   STDCALL
+  L&_0002  . . . . . . . . . . .        L Near   00000205 _TEXT
+  getkey_1 . . . . . . . . . . .        L Near   0000020D _TEXT
+initPlasma . . . . . . . . . . .        P Near   000000C0 _TEXT    00000114 Public   STDCALL
+  @@i  . . . . . . . . . . . . .        DWord             ebp - 0004
+  @@r  . . . . . . . . . . . . .        DWord             ebp - 0008
+  @@g  . . . . . . . . . . . . .        DWord             ebp - 000C
+  @@b  . . . . . . . . . . . . .        DWord             ebp - 0010
+  temp . . . . . . . . . . . . .        DWord             ebp - 0014
+  @C0001 . . . . . . . . . . . .        L Near   000000D2 _TEXT
+  @C0002 . . . . . . . . . . . .        L Near   000001C3 _TEXT
+main . . . . . . . . . . . . . .        P Near   00000293 _TEXT    00000176 Public   C
+  dwEsp  . . . . . . . . . . . .        DWord             ebp - 0004
+  dwPrevMode . . . . . . . . . .        DWord             ebp - 0008
+  dwSaveBuff . . . . . . . . . .        DWord             ebp - 000C
+  dwSaveBuff2  . . . . . . . . .        DWord             ebp - 0010
+  dwSaveBuff2hdl . . . . . . . .        DWord             ebp - 0014
+  @C000D . . . . . . . . . . . .        L Near   000003D8 _TEXT
+  @C000E . . . . . . . . . . . .        L Near   000003BE _TEXT
+  @C000F . . . . . . . . . . . .        L Near   000003B2 _TEXT
+  @C000A . . . . . . . . . . . .        L Near   0000036C _TEXT
+  @C000B . . . . . . . . . . . .        L Near   0000038A _TEXT
+  @C000C . . . . . . . . . . . .        L Near   000003A2 _TEXT
+  @C0005 . . . . . . . . . . . .        L Near   000002D8 _TEXT
+  @C0006 . . . . . . . . . . . .        L Near   000002D8 _TEXT
+  @C0007 . . . . . . . . . . . .        L Near   00000304 _TEXT
+  @C0008 . . . . . . . . . . . .        L Near   0000031F _TEXT
+  @C0009 . . . . . . . . . . . .        L Near   0000032A _TEXT
+  @C0010 . . . . . . . . . . . .        L Near   000003BE _TEXT
+  @C0011 . . . . . . . . . . . .        L Near   000003D6 _TEXT
+  @C0012 . . . . . . . . . . . .        L Near   00000402 _TEXT
+nextFrame  . . . . . . . . . . .        P Near   00000000 _TEXT    000000C0 Public   STDCALL
+  done . . . . . . . . . . . . .        L Near   0000009B _TEXT
+  L&_0001  . . . . . . . . . . .        L Near   0000008C _TEXT
+  @@pixel  . . . . . . . . . . .        L Near   0000004C _TEXT
+  @@scanline . . . . . . . . . .        L Near   0000001B _TEXT
+start32  . . . . . . . . . . . .        P Near   00000409 _TEXT    00000059 Public   C
+vsyncwait  . . . . . . . . . . .        P Near   0000020F _TEXT    0000000A Public   STDCALL
+  L&_0003  . . . . . . . . . . .        L Near   00000213 _TEXT
+
+
+Symbols:
+
+                N a m e                 Type       Value     Attr
+
+??0000 . . . . . . . . . . . . .        Byte[30]         131h _DATA STDCALL
+??0001 . . . . . . . . . . . . .        Byte[35]         14Fh _DATA STDCALL
+??0002 . . . . . . . . . . . . .        Byte[26]         172h _DATA STDCALL
+?BACKBUFFER  . . . . . . . . . .        Number             1h 
+?FLAT  . . . . . . . . . . . . .        Text   0
+@CodeSize  . . . . . . . . . . .        Number             0h 
+@DataSize  . . . . . . . . . . .        Number             0h 
+@Interface . . . . . . . . . . .        Number             3h 
+@Model . . . . . . . . . . . . .        Number             2h 
+@code  . . . . . . . . . . . . .        Text   _TEXT
+@data  . . . . . . . . . . . . .        Text   DGROUP
+@stack . . . . . . . . . . . . .        Text   DGROUP
+_VESA32_ . . . . . . . . . . . .        Text   
+__baseadd  . . . . . . . . . . .        DWord            18Ch _DATA Public STDCALL
+bFlip  . . . . . . . . . . . . .        Byte              10h _DATA STDCALL
+blue . . . . . . . . . . . . . .        DWord             21h _DATA STDCALL
+ddheight . . . . . . . . . . . .        Number           1E0h 
+ddwidth  . . . . . . . . . . . .        Number           280h 
+dwBytesPixel . . . . . . . . . .        DWord              0h _DATA STDCALL
+dwMode . . . . . . . . . . . . .        DWord              4h _DATA STDCALL
+dwScreenOffs . . . . . . . . . .        DWord              Ch _DATA STDCALL
+dwScreenSize . . . . . . . . . .        DWord              8h _DATA STDCALL
+factor1  . . . . . . . . . . . .        Number     -00000001h 
+factor2  . . . . . . . . . . . .        Number             1h 
+factor3  . . . . . . . . . . . .        Number             1h 
+factor4  . . . . . . . . . . . .        Number     -00000001h 
+green  . . . . . . . . . . . . .        DWord             1Dh _DATA STDCALL
+palette  . . . . . . . . . . . .        DWord[256]         0h _BSS STDCALL
+phaseA . . . . . . . . . . . . .        DWord             11h _DATA STDCALL
+phaseB . . . . . . . . . . . . .        DWord             15h _DATA STDCALL
+red  . . . . . . . . . . . . . .        DWord             19h _DATA STDCALL
+scale1 . . . . . . . . . . . . .        DWord             25h _DATA STDCALL
+scale2 . . . . . . . . . . . . .        DWord             29h _DATA STDCALL
+scale3 . . . . . . . . . . . . .        DWord             2Dh _DATA STDCALL
+startlabel . . . . . . . . . . .        Text   
+svgainfo . . . . . . . . . . . .        SVGAINFO          31h _DATA STDCALL
+table  . . . . . . . . . . . . .        DWord[512]       400h _BSS STDCALL
+
+vesa2.asm: 515 lines, 3 passes, 5 ms, 0 warnings, 0 errors

@@ -1,0 +1,116 @@
+JWlink Version 1.9beta 15
+Portions Copyright (c) 1985-2002 Sybase, Inc. All Rights Reserved.
+Created on:       20/12/16 09:55:13
+Executable Image: vesa2mz.exe
+creating a DOS executable
+
+
+                        +------------+
+                        |   Groups   |
+                        +------------+
+
+Group                           Address              Size
+=====                           =======              ====
+
+DGROUP                          0000:0000            00005e60
+
+
+
+                        +--------------+
+                        |   Segments   |
+                        +--------------+
+
+Segment                Class          Group          Address         Size
+=======                =====          =====          =======         ====
+
+_TEXT                  CODE           DGROUP         0000:0000       0000199c
+_TEXT16                CODE           AUTO           0199:000c       00000261
+_DATA                  DATA           DGROUP         01c0:0000       00000560
+_BSS                   BSS            DGROUP         0216:0000       00001d00
+STACK                  STACK          DGROUP         03e6:0000       00002000
+
+
+                        +----------------+
+                        |   Memory Map   |
+                        +----------------+
+
+* = unreferenced symbol
++ = symbol only referenced locally
+
+Address        Symbol
+=======        ======
+
+Module: VESA2MZ.obj(vesa2.asm)
+0000:00000000* _nextFrame@0
+0000:000000c0* _initPlasma@0
+0000:000001d4* _getkey@0
+0000:0000020f* _vsyncwait@0
+0000:00000219* _FlipScreen@0
+0000:00000249* _allocmemory@4
+0000:00000276* _freememory@4
+0000:00000293* _main
+0000:00001d8c  ___baseadd
+0000:00000409  _start32
+Module: \hx\libomf\vesa32s.lib(VIDEOMEM.ASM)
+0000:00000464  _GetVesaMemoryBufferSize@4
+0000:000005f8  _SaveVesaVideoMemory@8
+0000:00000674  _RestoreVesaVideoMemory@4
+Module: \hx\libomf\vesa32s.lib(SETVMODE.ASM)
+0000:000006d0  _SetVesaMode@4
+0000:00000710  _GetVesaMode@0
+Module: \hx\libomf\vesa32s.lib(GETVMODE.ASM)
+0000:00001d94* _g_dwLinearBasePtr
+0000:00000728  _IsModeSupported@4
+0000:0000074c  _GetVesaVideoMemorySize@0
+0000:00000770  _GetVesaModeInfo@8
+0000:00000878* _SetMaxVideoResolution@12
+Module: \hx\libomf\vesa32s.lib(SAVEREST.ASM)
+0000:00001da4  _g_dwRestoreNotify
+0000:000008ec  _GetVesaStateBufferSize@0
+0000:000008fc  _SaveVesaVideoState@8
+0000:00000960  _RestoreVesaVideoState@4
+Module: \hx\libomf\vesa32s.lib(SRCHMODE.ASM)
+0000:000009d8* _EnumVesaModes@8
+0000:00000b54  _SearchVesaMode@12
+Module: \hx\libomf\vesa32s.lib(INIT.ASM)
+0000:00000ba4  _VesaInit@0
+0000:00000bb4  _VesaExit@0
+Module: \hx\libomf\vesa32s.lib(VESAINFO.ASM)
+0000:00001fa8  _g_bVesaInfo
+0000:00001da8  _g_vesainfo
+0000:00000bbc  __GetVesaInfo@0
+0000:00000c6c* _GetVesaInfo@4
+Module: \hx\libomf\vesa32s.lib(MOUSEGFX.ASM)
+0000:00000c98* _SetCursorPaletteEntries@8
+0000:00000d58* _VesaMouseInit@0
+0000:00000e38  _VesaMouseExit@0
+0000:00001124  _MouseSetDisplayStart@0
+Module: \hx\libomf\vesa32s.lib(SETDISP.ASM)
+0000:00001588* _SetVesaDisplayStart@12
+0000:00001628* _GetVesaDisplayStart@0
+0000:00001648* _GetVesaFlipStatus@0
+0000:00001664  __SetDisplayStartProc@4
+Module: \hx\libomf\vesa32s.lib(SETPAL.ASM)
+0000:00001884  _SetVesaPaletteEntries@12
+0000:000018d0* _GetVesaPaletteEntries@12
+0000:000018e8  __SetPaletteProc@4
+Module: \hx\libomf\vesa32s.lib(VESAOPT.ASM)
+0000:00002154  _g_Vesa32Options
+0000:00001968* _SetVesa32Options@4
+
+
+                        +--------------------+
+                        |   Libraries Used   |
+                        +--------------------+
+
+\hx\libomf\vesa32s.lib
+
+
+                        +-----------------------+
+                        |   Linker Statistics   |
+                        +-----------------------+
+
+Stack size:  2000 (8192.)
+Memory size:  5e60 (24160.)
+Entry point address: 0199:000c
+Link time: 00:00.01

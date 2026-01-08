@@ -1,0 +1,127 @@
+JWlink Version 1.9beta 15
+Portions Copyright (c) 1985-2002 Sybase, Inc. All Rights Reserved.
+Created on:       20/12/16 12:55:00
+Executable Image: VESA2.exe
+creating a PE executable
+
+
+                        +------------+
+                        |   Groups   |
+                        +------------+
+
+Group                           Address              Size
+=====                           =======              ====
+
+.rdata                          00403000             00000027
+DGROUP                          00405000             000014d0
+
+
+
+                        +--------------+
+                        |   Segments   |
+                        +--------------+
+
+Segment                Class          Group          Address         Size
+=======                =====          =====          =======         ====
+
+_TEXT                  CODE           AUTO           00401000        0000040f
+.text                  CODE           AUTO           00401410        00001524
+.rdata                 CONST          .rdata         00403000        00000027
+_DATA                  DATA           AUTO           00404000        0000018c
+.data                  DATA           DGROUP         00405000        000003d0
+.bss                   BSS            DGROUP         004053d0        00001100
+_BSS                   BSS            AUTO           00407000        00000c00
+
+
+                        +----------------+
+                        |   Memory Map   |
+                        +----------------+
+
+* = unreferenced symbol
++ = symbol only referenced locally
+
+Address        Symbol
+=======        ======
+
+Module: VESA2.obj(vesa2.asm)
+00401000*      _nextFrame@0
+004010bd*      _initPlasma@0
+004011d1*      _getkey@0
+00401206*      _vsyncwait@0
+00401210*      _FlipScreen@0
+00401240*      _allocmemory@4
+00401267*      _freememory@4
+00401284*      _main
+004013fa       _mainCRTStartup
+Module: ..\..\lib\vesa32s.lib(VIDEOMEM.ASM)
+00401410       _GetVesaMemoryBufferSize@4
+0040159c       _SaveVesaVideoMemory@8
+00401614       _RestoreVesaVideoMemory@4
+Module: ..\..\lib\vesa32s.lib(SETVMODE.ASM)
+0040166c       _SetVesaMode@4
+004016ac       _GetVesaMode@0
+Module: ..\..\lib\vesa32s.lib(GETVMODE.ASM)
+00405004*      _g_dwLinearBasePtr
+004016c4       _IsModeSupported@4
+004016e8       _GetVesaVideoMemorySize@0
+0040170c       _GetVesaModeInfo@8
+00401808*      _SetMaxVideoResolution@12
+Module: ..\..\lib\vesa32s.lib(SAVEREST.ASM)
+00405014       _g_dwRestoreNotify
+0040187c       _GetVesaStateBufferSize@0
+0040188c       _SaveVesaVideoState@8
+004018ec       _RestoreVesaVideoState@4
+Module: ..\..\lib\vesa32s.lib(SRCHMODE.ASM)
+00401960*      _EnumVesaModes@8
+00401acc       _SearchVesaMode@12
+Module: ..\..\lib\vesa32s.lib(INIT.ASM)
+00401b1c       _VesaInit@0
+00401b2c       _VesaExit@0
+Module: ..\..\lib\vesa32s.lib(VESAINFO.ASM)
+00405218       _g_bVesaInfo
+00405018       _g_vesainfo
+00401b34       __GetVesaInfo@0
+00401bd8*      _GetVesaInfo@4
+Module: ..\..\lib\vesa32s.lib(MOUSEGFX.ASM)
+00401c04*      _SetCursorPaletteEntries@8
+00401cc4*      _VesaMouseInit@0
+00401de4       _VesaMouseExit@0
+004020d0       _MouseSetDisplayStart@0
+Module: ..\..\lib\vesa32s.lib(SETDISP.ASM)
+00402534*      _SetVesaDisplayStart@12
+004025d4*      _GetVesaDisplayStart@0
+004025f4*      _GetVesaFlipStatus@0
+00402610       __SetDisplayStartProc@4
+Module: ..\..\lib\vesa32s.lib(SETPAL.ASM)
+0040282c       _SetVesaPaletteEntries@12
+00402878*      _GetVesaPaletteEntries@12
+00402890       __SetPaletteProc@4
+Module: ..\..\lib\vesa32s.lib(VESAOPT.ASM)
+004053c4       _g_Vesa32Options
+00402900*      _SetVesa32Options@4
+
+
+                        +----------------------+
+                        |   Imported Symbols   |
+                        +----------------------+
+
+Symbol                              Module
+======                              ======
+
+
+
+                        +--------------------+
+                        |   Libraries Used   |
+                        +--------------------+
+
+..\..\lib\vesa32s.lib
+
+
+                        +-----------------------+
+                        |   Linker Statistics   |
+                        +-----------------------+
+
+Stack size:  00100000 (1048576.)
+Memory size:  3bb7 (15287.)
+Entry point address: 004013fa
+Link time: 00:00.01

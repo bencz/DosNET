@@ -1,0 +1,26 @@
+========================================
+Building SimpleInt
+========================================
+[1/4] Assembling CORLIB...
+JWasm v2.11, Oct 20 2013, Masm-compatible assembler.
+Portions Copyright (c) 1992-2002 Sybase, Inc. All Rights Reserved.
+Source code is available under the Sybase Open Watcom Public License.
+
+CORLIB.ASM: 15008 lines, 3 passes, 5013 ms, 0 warnings, 0 errors
+[2/4] Assembling SIMPLENT...
+JWasm v2.11, Oct 20 2013, Masm-compatible assembler.
+Portions Copyright (c) 1992-2002 Sybase, Inc. All Rights Reserved.
+Source code is available under the Sybase Open Watcom Public License.
+
+SIMPLENT.ASM: 558 lines, 2 passes, 11425 ms, 0 warnings, 0 errors
+[3/4] Linking...
+JWlink Version 1.9beta 13
+Portions Copyright (c) 1985-2002 Sybase, Inc. All Rights Reserved.
+Source code is available under the Sybase Open Watcom Public License.
+loading object files
+creating a PE executable
+[4/4] Adding stub...
+pestub: SIMPLENT.EXE modified successfully
+
+Running SimpleInt...
+Test 1: String literal
