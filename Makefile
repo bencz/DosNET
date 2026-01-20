@@ -9,7 +9,10 @@ CORLIB_DIR = $(SRC_DIR)/corlib/corlib
 CORE_DIR = $(SRC_DIR)/DosNet.Core
 COMPILER_DIR = $(SRC_DIR)/DosNet.Compiler
 
-CSC = dotnet /usr/local/share/dotnet/sdk/10.0.100/Roslyn/bincore/csc.dll
+DOTNET := dotnet
+SDK_VERSION := $(shell $(DOTNET) --list-sdks | cut -d' ' -f1 | sort -V | tail -n 1)
+SDK_DIR := $(shell $(DOTNET) --info | grep "Base Path" | sed 's/.*: //' | sed 's:/*$$::')
+CSC := $(DOTNET) $(SDK_DIR)/Roslyn/bincore/csc.dll
 DOSNETC = $(BUILD_DIR)/DosNet.Compiler
 
 # Lista de samples
